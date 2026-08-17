@@ -1,0 +1,10 @@
+# system files
+.DS_Store
+
+# build files
+.cache/
+build/
+build_wasm/
+
+# IDE files
+.vscode/

@@ -1,0 +1,24 @@
+[background]
+scale = 3   # the background image scale
+speed = 0.5 # the parallax speed
+
+[editor]
+brush-transparency = 0.5 # transparency of the brush, from [0, 1]
+
+[mario]
+tracking-delay = 40   # camera tracking delay in the y direction
+slip-factor = 0.1     # friction of mario
+jump-strength = 1010  # jump height
+gravity = 75          # gravity
+acceleration = 2500   # acceleration in pixels per second squared of mario in the x direction
+skid-multiplier = 0.9 # how much to speed up skidding around
+maximum-speed = 1000  # the maximum speed
+scale = 5             # mario's scale
+coyote-time = 10      # number of frames before mario cannot jump again
+jump-hold-time = 20   # frames mario can still jump for
+
+editing-speed = 1000   # speed of flight when editing
+editing-friction = 0.6 # friction for mario
+
+[tile]
+scale = 5  # the tile scale
