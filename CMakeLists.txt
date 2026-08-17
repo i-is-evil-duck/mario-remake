@@ -99,6 +99,11 @@ set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(zstd)
 
 if(EMSCRIPTEN)
+    set(EMSCRIPTEN_SHELL_MODE "release" CACHE STRING "Emscripten shell mode: release (clean) or dev (console)")
+    set_property(CACHE EMSCRIPTEN_SHELL_MODE PROPERTY STRINGS "release" "dev")
+endif()
+
+if(EMSCRIPTEN)
     add_compile_options(-Wno-error)
 endif()
 
@@ -162,7 +167,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if(EMSCRIPTEN)
+    if(EMSCRIPTEN_SHELL_MODE STREQUAL "dev")
+        set(_SHELL_FILE "${CMAKE_SOURCE_DIR}/shell_dev.html")
+    else()
+        set(_SHELL_FILE "${CMAKE_SOURCE_DIR}/shell_release.html")
+    endif()
+
     target_link_options(${PROJECT_NAME} PRIVATE
+        "--shell-file" "${_SHELL_FILE}"
         "--preload-file" "${CMAKE_SOURCE_DIR}/res@res"
         "-sFILESYSTEM=1"
         "-sALLOW_MEMORY_GROWTH=1"

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Super Mario World</title>
+    <style>
+      body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+      canvas { display: block; margin: 0 auto; background: #000; }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+    <script type='text/javascript'>
+      var canvasElement = document.getElementById('canvas');
+      canvasElement.addEventListener("webglcontextlost", (e) => {
+        alert('WebGL context lost. You will need to reload the page.');
+        e.preventDefault();
+      }, false);
+
+#if MODULARIZE && !EXPORT_ES6
+      var moduleArgs = {
+#else
+      var Module = {
+#endif
+        print(...args) { console.log(...args); },
+        canvas: canvasElement,
+        setStatus(text) {},
+        totalDependencies: 0,
+        monitorRunDependencies(left) {}
+      };
+    </script>
+    {{{ SCRIPT }}}
+#if MODULARIZE && !EXPORT_ES6
+    <script type='text/javascript'>
+      {{{ EXPORT_NAME }}}(moduleArgs);
+    </script>
+#endif
+  </body>
+</html>

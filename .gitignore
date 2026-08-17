@@ -5,6 +5,7 @@
 .cache/
 build/
 build_wasm/
+build_wasm_dev/
 
 # IDE files
 .vscode/
