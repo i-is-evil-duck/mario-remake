@@ -74,3 +74,9 @@ Then open http://localhost:8080 in your browser.
 | `Ctrl+O` | Open level |
 | Left click | Draw |
 | Right click | Destroy |
+
+## Credits
+
+This is a WebAssembly port of [Super Mario World](https://codeberg.org/resparing/mario) by [resparing](https://codeberg.org/resparing).
+
+The original native C++23 + SDL3 project, level editor, and all game assets (sprites, tiles, fonts, level data) were created by resparing. This fork adds Emscripten/WASM compilation support and Docker-based deployment.

@@ -1,8 +1,10 @@
 # CHANGES.md
 
-This document describes every change made to compile and run the Super Mario
-World clone as a WebAssembly application in the browser, including Docker-based
-deployment.
+This is a WebAssembly port of [Super Mario World](https://codeberg.org/resparing/mario)
+by [resparing](https://codeberg.org/resparing). The original native C++23 + SDL3
+project, level editor, and all game assets were created by resparing. This document
+describes the changes made to compile and run it as a WebAssembly application in the
+browser, including Docker-based deployment.
 
 ---
 
