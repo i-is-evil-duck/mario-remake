@@ -1,4 +1,4 @@
-# Super mario world
+# Super Mario World
 
 <br />
 
@@ -8,30 +8,69 @@
 
 <img src="https://count.getloli.com/@mario-cpp?name=mario-cpp&theme=booru-lewd&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" />
 
-# Running
+## Building
 
-Linux/Macos: Run `./run.sh` in the terminal.
-Windows: Run `.\run.bat` in powershell.
+### Requirements
+
+- CMake >= 3.24
+- Ninja
+- C++23 compiler (GCC 13+, Clang 16+, or MSVC 17+)
+- For WASM: [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+
+### Native build (Linux/macOS)
+
+```sh
+./run.sh
+```
+
+### Native build (Windows)
+
+```powershell
+.\run.bat
+```
+
+### WebAssembly build
+
+```sh
+source /path/to/emsdk/emsdk_env.sh
+emcmake cmake -B build_wasm -G Ninja -DCMAKE_BUILD_TYPE=Release
+emmake ninja -C build_wasm
+```
+
+Output will be in `build_wasm/bin/`.
+
+## Docker (WASM)
+
+Build and serve the game in a container:
+
+```sh
+docker build -t super-mario-world .
+docker run -p 8080:80 super-mario-world
+```
+
+Then open http://localhost:8080 in your browser.
 
 ## Key binds
 
-`A` or `Left Arrow` to move left
-`D` or `Right Arrow` to move right
-`W` or `Up Arrow` to jump
+| Key | Action |
+|-----|--------|
+| `A` / `Left Arrow` | Move left |
+| `D` / `Right Arrow` | Move right |
+| `W` / `Up Arrow` | Jump |
+| `Escape` | Toggle editing mode |
 
-`Escape` to toggle editing mode
+### Editor
 
-In editing:
-`1` to draw unordered/important tiles
-`2` to draw pipe tiles
-`3` to draw semisolid tiles
-`4` to draw mushroom tiles
-`5` to draw decoration tiles
-`6` to draw ground tiles
-
-`E` to select the tile under the mouse
-
-`Control + S` to save a mario level
-`Control + O` to open a mario level
-
-Left click to draw, right click to destroy
+| Key | Action |
+|-----|--------|
+| `1` | Draw unordered/important tiles |
+| `2` | Draw pipe tiles |
+| `3` | Draw semisolid tiles |
+| `4` | Draw mushroom tiles |
+| `5` | Draw decoration tiles |
+| `6` | Draw ground tiles |
+| `E` | Select tile under mouse |
+| `Ctrl+S` | Save level |
+| `Ctrl+O` | Open level |
+| Left click | Draw |
+| Right click | Destroy |

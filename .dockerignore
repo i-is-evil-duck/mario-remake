@@ -1,0 +1,5 @@
+build/
+build_wasm/
+.cache/
+.git/
+.vscode/
