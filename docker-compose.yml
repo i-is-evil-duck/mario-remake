@@ -1,0 +1,5 @@
+services:
+  super-mario-world:
+    build: .
+    ports:
+      - "8041:80"
