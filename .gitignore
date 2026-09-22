@@ -9,3 +9,8 @@ build_wasm_dev/
 
 # IDE files
 .vscode/
+
+# zig prototype (merged from github master)
+.sixth
+.zig-cache
+zig-x86_64-windows-0.15.2
