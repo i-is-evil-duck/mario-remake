@@ -1,0 +1,8 @@
+name = "resparing-mario-wasm"
+compatibility_date = "2026-09-22"
+
+# Pure static site (no Worker script) served from ./public.
+# Replaces nginx.conf + Dockerfile for Cloudflare.
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"

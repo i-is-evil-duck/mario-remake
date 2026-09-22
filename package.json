@@ -1,0 +1,12 @@
+{
+  "name": "resparing-mario-wasm",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Super Mario World (Emscripten/WASM) on Cloudflare Workers Static Assets",
+  "scripts": {
+    "build": "bash build-cloudflare.sh"
+  },
+  "devDependencies": {
+    "wrangler": "^4.136.3"
+  }
+}
