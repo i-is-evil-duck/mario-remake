@@ -1,4 +1,4 @@
-name = "resparing-mario-wasm"
+name = "mario-remake"
 compatibility_date = "2026-09-22"
 
 # Pure static site (no Worker script) served from ./public.

@@ -1,5 +1,7 @@
 # Super Mario World
 
+## Play live: https://mario.j3ly.com
+
 <br />
 
 <img alt="Stargazers" src="https://img.shields.io/badge/dynamic/json?url=https://codeberg.org/api/v1/repos/resparing/mario&query=$.stars_count&label=stars&style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41">
@@ -49,6 +51,34 @@ docker run -p 8080:80 super-mario-world
 ```
 
 Then open http://localhost:8080 in your browser.
+
+## Cloudflare (live at https://mario.j3ly.com)
+
+The game is deployed with **Cloudflare Workers Static Assets** (see
+`wrangler.toml`, `package.json`, `build-cloudflare.sh`).
+
+Deployment flow:
+
+- **`workers` branch** — Cloudflare Workers Builds watches only this branch.
+  Push to it whenever you want to publish, so everyday commits to `master`
+  don't trigger 7-minute rebuilds:
+  ```sh
+  git checkout workers && git merge master && git push origin workers
+  ```
+- **Build toolchain is cached**: cmake/ninja/ccache/emsdk live in
+  `node_modules/.toolchain`, which Cloudflare's dependency cache (keyed on
+  `package-lock.json`) restores between builds. First build takes ~7 min;
+  later rebuilds reuse ccache and only recompile changed game sources.
+
+Workers Builds dashboard settings:
+
+| Setting | Value |
+|---------|-------|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Production branch | `workers` |
+
+Custom domain `mario.j3ly.com` is a CNAME to the Worker.
 
 ## Key binds
 

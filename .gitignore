@@ -10,6 +10,9 @@ build_wasm_dev/
 # IDE files
 .vscode/
 
+# node
+node_modules/
+
 # zig prototype (merged from github master)
 .sixth
 .zig-cache

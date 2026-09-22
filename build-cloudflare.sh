@@ -2,22 +2,28 @@
 set -euo pipefail
 
 # Cloudflare Workers Builds: compile WASM with Emscripten, output to ./public.
-# Dashboard settings:
+#
+# The full toolchain (cmake, ninja, ccache, emsdk) lives in
+# node_modules/.toolchain so Cloudflare's dependency cache -- keyed on
+# package-lock.json -- restores it on every rebuild. Result: after the first
+# build (~7 min), subsequent builds skip all downloads and reuse ccache hits
+# (~1-2 min when only game sources change).
+#
+# Dashboard settings (Workers Builds):
 #   Build command:   npm run build
 #   Deploy command:  npx wrangler deploy
+#   Production branch: workers   (rebuilds only when you push to `workers`)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLIC_DIR="$ROOT/public"
 BUILD_DIR="$ROOT/build_wasm"
-CACHE_DIR="$ROOT/.cache"
-EMSDK_DIR="${EMSDK_DIR:-$CACHE_DIR/emsdk}"
+TOOLCHAIN="$ROOT/node_modules/.toolchain"
+EMSDK_DIR="$TOOLCHAIN/emsdk"
 EMSDK_VERSION="3.1.74"
-
-# No root in Cloudflare Workers Builds, so fetch user-space binaries.
 CMAKE_VERSION="3.31.6"
 NINJA_VERSION="1.12.1"
+CCACHE_VERSION="4.10.2"
 
-echo "==> Checking tools..."
 for t in git python3; do
   if ! command -v "$t" >/dev/null 2>&1; then
     echo "Missing required tool: $t" >&2
@@ -25,7 +31,7 @@ for t in git python3; do
   fi
 done
 
-mkdir -p "$CACHE_DIR"
+mkdir -p "$TOOLCHAIN"
 
 download() { # download <url> <dest>: curl, wget, or python fallback
   if command -v curl >/dev/null 2>&1; then
@@ -37,39 +43,36 @@ download() { # download <url> <dest>: curl, wget, or python fallback
   fi
 }
 
-if ! command -v cmake >/dev/null 2>&1; then
-  echo "==> Installing CMake $CMAKE_VERSION (user-space, no root)..."
-  CMAKE_TGZ="$CACHE_DIR/cmake-$CMAKE_VERSION-linux-x86_64.tar.gz"
-  if [ ! -f "$CMAKE_TGZ" ]; then
-    download \
-      "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.tar.gz" \
-      "$CMAKE_TGZ"
-  fi
-  mkdir -p "$CACHE_DIR/cmake"
-  tar xzf "$CMAKE_TGZ" --strip-components=1 -C "$CACHE_DIR/cmake"
+if [ ! -x "$TOOLCHAIN/cmake/bin/cmake" ]; then
+  echo "==> Installing CMake $CMAKE_VERSION (cached in node_modules/.toolchain)..."
+  TGZ="$TOOLCHAIN/cmake.tar.gz"
+  [ -f "$TGZ" ] || download \
+    "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.tar.gz" "$TGZ"
+  mkdir -p "$TOOLCHAIN/cmake"
+  tar xzf "$TGZ" --strip-components=1 -C "$TOOLCHAIN/cmake"
 fi
 
-if ! command -v ninja >/dev/null 2>&1; then
-  echo "==> Installing Ninja $NINJA_VERSION (user-space, no root)..."
-  NINJA_ZIP="$CACHE_DIR/ninja-linux.zip"
-  if [ ! -f "$NINJA_ZIP" ]; then
-    download \
-      "https://github.com/ninja-build/ninja/releases/download/v$NINJA_VERSION/ninja-linux.zip" \
-      "$NINJA_ZIP"
-  fi
-  mkdir -p "$CACHE_DIR/ninja"
-  python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" \
-    "$NINJA_ZIP" "$CACHE_DIR/ninja"
-  chmod +x "$CACHE_DIR/ninja/ninja"
+if [ ! -x "$TOOLCHAIN/ninja/ninja" ]; then
+  echo "==> Installing Ninja $NINJA_VERSION (cached in node_modules/.toolchain)..."
+  ZIP="$TOOLCHAIN/ninja.zip"
+  [ -f "$ZIP" ] || download \
+    "https://github.com/ninja-build/ninja/releases/download/v$NINJA_VERSION/ninja-linux.zip" "$ZIP"
+  mkdir -p "$TOOLCHAIN/ninja"
+  python3 -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$ZIP" "$TOOLCHAIN/ninja"
+  chmod +x "$TOOLCHAIN/ninja/ninja"
 fi
 
-export PATH="$CACHE_DIR/cmake/bin:$CACHE_DIR/ninja:$PATH"
-echo "cmake: $(command -v cmake) ($(cmake --version | head -n1))"
-echo "ninja: $(command -v ninja) ($(ninja --version))"
+if [ ! -x "$TOOLCHAIN/ccache/ccache" ]; then
+  echo "==> Installing ccache $CCACHE_VERSION (cached in node_modules/.toolchain)..."
+  XZ="$TOOLCHAIN/ccache.tar.xz"
+  [ -f "$XZ" ] || download \
+    "https://github.com/ccache/ccache/releases/download/v$CCACHE_VERSION/ccache-$CCACHE_VERSION-linux-x86_64.tar.xz" "$XZ"
+  mkdir -p "$TOOLCHAIN/ccache"
+  tar xJf "$XZ" --strip-components=1 -C "$TOOLCHAIN/ccache"
+fi
 
-echo "==> Setting up Emscripten $EMSDK_VERSION in $EMSDK_DIR..."
 if [ ! -d "$EMSDK_DIR" ]; then
-  mkdir -p "$(dirname "$EMSDK_DIR")"
+  echo "==> Setting up Emscripten $EMSDK_VERSION (cached in node_modules/.toolchain)..."
   git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$EMSDK_DIR"
 fi
 
@@ -80,9 +83,21 @@ cd "$EMSDK_DIR"
 source ./emsdk_env.sh
 cd "$ROOT"
 
+export PATH="$TOOLCHAIN/cmake/bin:$TOOLCHAIN/ninja:$TOOLCHAIN/ccache:$PATH"
+export CCACHE_DIR="$TOOLCHAIN/ccache-data"
+export CCACHE_MAXSIZE=3G
+
+echo "cmake: $(command -v cmake) ($(cmake --version | head -n1))"
+echo "ninja: $(command -v ninja) ($(ninja --version))"
+echo "ccache: $(command -v ccache) ($(ccache --version | head -n1))"
+
 echo "==> Building WASM..."
-emcmake cmake -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Release
+emcmake cmake -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 emmake ninja -C "$BUILD_DIR" -j"$(nproc 2>/dev/null || echo 4)"
+
+echo "ccache stats:"
+ccache --show-stats | head -n 12 || true
 
 echo "==> Publishing to $PUBLIC_DIR..."
 mkdir -p "$PUBLIC_DIR"
@@ -96,7 +111,8 @@ if [ -f "$PUBLIC_DIR/super-mario-world.html" ]; then
   cp -f "$PUBLIC_DIR/super-mario-world.html" "$PUBLIC_DIR/index.html"
 fi
 
-# Required headers (replaces nginx.conf COOP/COEP).
+# Required headers (replaces nginx.conf COOP/COEP). Content-Encoding br
+# below matches what Cloudflare emits for wasm/js/data, keep consistent.
 cat > "$PUBLIC_DIR/_headers" <<'EOF'
 /*
   Cross-Origin-Opener-Policy: same-origin
